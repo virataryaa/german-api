@@ -192,7 +192,7 @@ def style(fig, height=340, legend="bottom", months=None, unified=False, fmt=",.0
         leg.update(y=1.0, yanchor="bottom")
         margin["t"] = 30
     fig.update_layout(template="plotly_white", height=height, paper_bgcolor="rgba(0,0,0,0)",
-                      plot_bgcolor="rgba(0,0,0,0)", font=dict(color=INK), legend=leg, showlegend=legend is not None,
+                      plot_bgcolor="rgba(0,0,0,0)", font=dict(family="Plus Jakarta Sans, sans-serif", color=INK, size=11), legend=leg, showlegend=legend is not None,
                       xaxis=xaxis, yaxis=yaxis, margin=margin, hovermode="x unified" if unified else "closest", **extra)
     return fig
 
@@ -337,7 +337,9 @@ def _views_body(raw, gbe, title, comm, unit, span, b3):
                 with st.container(key=f"mcproj_{'off' if st.session_state.get('mc_pj_method', 'Off') == 'Off' else 'on'}"):
                     proj = _projection(ctx["piv"], ctx["latest_cy"], ctx["prev_cy"], ctx["common"], ctx["ref"],
                                        unit, ctx["fmt"])
-    title.markdown(f"<div class='mc-hero-t'>German Implied Coffee Consumption · {comm}</div>", unsafe_allow_html=True)
+    title.markdown(f"<div class='pt-head'><span class='pt-title'>German implied coffee consumption<span class='pt-sub'> · {comm} · {unit}</span></span>"
+                   f"<span class='pt-meta'><span class='pt-chip'>Coffee tax / 2.19 €/kg</span><span class='pt-chip'>Destatis 71211-0005</span></span></div>",
+                   unsafe_allow_html=True)
     if ctx is None:
         st.info("No data for this selection.")
         return
