@@ -13,6 +13,7 @@ WINE, ORANGE, PURPLE, SKY = "#7b1e3a", "#e8770a", "#7a4fa0", "#6b9bd2"
 INK, AXIS, GRID = "#1a1a2e", "#4a5578", "rgba(10,36,99,0.08)"
 SERIES = [NAVY, AMBER, TEAL, RED, GREEN, PURPLE, SKY, WINE, "#9a6b3f", "#5f7a3a"]
 OTHER_C = "#c3cbe0"
+H = 320                  # one compact chart height for every page
 MONTHS = ["Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep"]   # coffee year Oct-Sep
 
 # ICO green-bean-equivalent factors

@@ -5,39 +5,41 @@ st.set_page_config(page_title="German Coffee", layout="wide", initial_sidebar_st
 import importlib
 
 import common
+import comprehensive
 import theme
-import views_consumption
 import views_origins
 import views_prices
 import views_summary
 import views_trade
 
 # Streamlit reruns only this file; reload the helpers so a push does not leave stale modules in a running app
-for _m in (theme, common, views_summary, views_consumption, views_origins, views_trade, views_prices):
+for _m in (theme, common, comprehensive, views_summary, views_origins, views_trade, views_prices):
     importlib.reload(_m)
 
-from common import UNITS, latest_month, load_origins, load_tax
+from common import latest_month, load_origins, load_tax
 from theme import APP_CSS, COT_CSS, FONT_CSS
 
 st.markdown(FONT_CSS, unsafe_allow_html=True)
 st.markdown(COT_CSS, unsafe_allow_html=True)
 st.markdown(APP_CSS, unsafe_allow_html=True)
 
-PAGES = {"Consumption": views_consumption, "Origins": views_origins, "Trade Balance": views_trade, "Import Prices": views_prices,
-         "Summary": views_summary}
+PAGES = ["Consumption", "Origins", "Trade Balance", "Import Prices", "Summary"]
+SIDEBARS = {"Origins": views_origins.sidebar, "Trade Balance": views_trade.sidebar, "Import Prices": views_prices.sidebar}
 
 with st.sidebar:
     st.markdown("<div class='sb-title'>German Coffee</div><div class='sb-rule'></div>", unsafe_allow_html=True)
-    page = st.radio("View", list(PAGES), key="nav", label_visibility="collapsed")
+    page = st.radio("View", PAGES, key="nav", label_visibility="collapsed")
+    args = ()
+    if page in SIDEBARS:
+        st.markdown("---")
+        args = SIDEBARS[page]()
     st.markdown("---")
-    if page == "Summary":
-        arg = None
-    elif page == "Import Prices":
-        arg = st.radio("Price unit", list(views_prices.CCY), horizontal=True, key="ccy")
-    else:
-        arg = st.radio("Unit", list(UNITS), index=1, horizontal=True, key="unit")
     st.markdown(f"<div class='sb-foot'>Coffee tax to <b>{load_tax().index.max():%b %Y}</b><br>"
-                f"Trade to <b>{latest_month(load_origins()):%b %Y}</b><br>Source: Destatis GENESIS-Online</div>",
-                unsafe_allow_html=True)
+                f"Trade to <b>{latest_month(load_origins()):%b %Y}</b><br>Source: Destatis</div>", unsafe_allow_html=True)
 
-PAGES[page].render(arg)
+if page == "Consumption":
+    comprehensive.render(st.empty())
+elif page == "Summary":
+    views_summary.render()
+else:
+    {"Origins": views_origins, "Trade Balance": views_trade, "Import Prices": views_prices}[page].render(*args)

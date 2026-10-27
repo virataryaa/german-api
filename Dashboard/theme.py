@@ -184,7 +184,11 @@ COT_CSS = """
 APP_CSS = """
 <style>
   .card-desc { font-family:Plus Jakarta Sans, sans-serif; color:#7a86a8; font-size:12px; margin:-2px 0 8px; line-height:1.35; }
-  .chart-head, .card-title { font-family:Plus Jakarta Sans, sans-serif; color:#0a2463; font-weight:700; font-size:14.5px; margin-bottom:2px; }
+  .chart-head, .card-title { font-family:Plus Jakarta Sans, sans-serif; color:#0a2463; font-weight:700; font-size:13.5px; margin-bottom:0; letter-spacing:-.005em; }
+  .block-container { padding-top:2.4rem !important; }
+  [data-testid="stMain"] [data-testid="stVerticalBlock"] { gap:.6rem; }
+  [data-testid="stVerticalBlockBorderWrapper"]:has(> div > [data-testid="stVerticalBlock"]) > div { padding:10px 14px 4px !important; }
+  .pt-head { margin:4px 0 8px !important; }
   [data-testid="stVerticalBlockBorderWrapper"]:has(> div > [data-testid="stVerticalBlock"]) {
     background:#ffffff; border:1px solid rgba(43,74,138,.10) !important; border-radius:18px;
     box-shadow:0 1px 2px rgba(10,36,99,.04), 0 4px 14px rgba(30,58,110,.06); }
