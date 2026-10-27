@@ -96,7 +96,8 @@ def ax(**kw):
 
 
 def base(fig, height=380, legend="top", unified=True, **kw):
-    leg = dict(orientation="h", x=0, y=1.0, yanchor="bottom", bgcolor="rgba(0,0,0,0)", font=dict(size=10.5))
+    leg = dict(orientation="h", x=0, y=1.0, yanchor="bottom", bgcolor="rgba(0,0,0,0)", font=dict(size=9.5),
+               itemwidth=30, tracegroupgap=0)
     if legend == "bottom":
         leg.update(y=-0.12, yanchor="top")
     xaxis = ax(showgrid=False)

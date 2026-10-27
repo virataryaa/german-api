@@ -187,7 +187,18 @@ APP_CSS = """
   .chart-head, .card-title { font-family:Plus Jakarta Sans, sans-serif; color:#0a2463; font-weight:700; font-size:13.5px; margin-bottom:0; letter-spacing:-.005em; }
   .block-container { padding-top:2.4rem !important; }
   [data-testid="stMain"] [data-testid="stVerticalBlock"] { gap:.6rem; }
-  [data-testid="stVerticalBlockBorderWrapper"]:has(> div > [data-testid="stVerticalBlock"]) > div { padding:10px 14px 4px !important; }
+  /* charts sit straight in their card: no second frame, nothing clipped at the edges */
+  [data-testid="stMain"] [data-testid="stPlotlyChart"], [data-testid="stMain"] [data-testid="stPlotlyChart"]:hover {
+    border:0 !important; box-shadow:none !important; padding:0 !important; background:transparent !important;
+    overflow:visible !important; border-radius:0 !important; }
+  [data-testid="stMain"] [data-testid="stPlotlyChart"] > div, [data-testid="stMain"] [data-testid="stPlotlyChart"] .main-svg { border-radius:0 !important; }
+  .chart-head { line-height:1.5; padding-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  /* radios inside cards: small one-line segmented pills */
+  [data-testid="stMain"] [data-testid="stVerticalBlockBorderWrapper"] div[role="radiogroup"] { padding:2px !important; flex-wrap:nowrap !important;
+    box-shadow:none !important; }
+  [data-testid="stMain"] [data-testid="stVerticalBlockBorderWrapper"] div[role="radiogroup"] label { padding:2px 10px !important; }
+  [data-testid="stMain"] [data-testid="stVerticalBlockBorderWrapper"] div[role="radiogroup"] label div[data-testid="stMarkdownContainer"] p {
+    font-size:11px !important; white-space:nowrap; }
   .pt-head { margin:4px 0 8px !important; }
   [data-testid="stVerticalBlockBorderWrapper"]:has(> div > [data-testid="stVerticalBlock"]) {
     background:#ffffff; border:1px solid rgba(43,74,138,.10) !important; border-radius:18px;

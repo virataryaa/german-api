@@ -57,7 +57,8 @@ def render(unit, top_n, decaf, eu):
         tot = p.sum(axis=1)
         fig.add_scatter(x=tot.index, y=tot.rolling(12).mean(), name="12m avg", mode="lines",
                         line=dict(color=INK_DARK, width=1.6, dash="dot"), hovertemplate=f"12m avg: %{{y:{fmt}}}<extra></extra>")
-        show(base(fig, H, barmode="stack", bargap=0.18, xaxis=dict(dtick="M3", tickformat="%b-%y"),
+        show(base(fig, H, barmode="stack", bargap=0.18, xaxis=dict(dtick="M3", tickformat="%b-%y",
+                                                                      range=[p.index[0] - pd.Timedelta(days=20), p.index[-1] + pd.Timedelta(days=20)]),
                   yaxis=dict(tickformat=fmt, title=dict(text=suf, font=dict(size=10)))), "or_stack")
 
     with r, st.container(border=True):

@@ -379,7 +379,7 @@ def _charts(ctx, proj):
     H = 340                                                        # one height for the three charts in the row
     l, mid, r = st.columns(3, gap="small")
     with l, st.container(border=True, key="mc_card_monthly"):
-        view = chart_head(f"{comm} Monthly Consumption",
+        view = chart_head("Monthly",
                           lambda w: w.radio("Seasonal view", ["Latest vs range", "All years"], horizontal=True,
                                             key=f"{k}_view", label_visibility="collapsed"))
         plot_years = shown if view == "All years" else [y for y in shown if y in (latest_cy, prev_cy)]
@@ -396,13 +396,12 @@ def _charts(ctx, proj):
         if latest_cy in plot_years:
             s_ = piv.loc[latest_cy].dropna()
             m = int(s_.index.max())
-            _last_dot(fig, MONTHS[m - 1], s_[m], f"<b>{_cv(s_[m], unit, fmt)}</b> {grey.format(MONTHS[m - 1])}",
-                      "top right")
+            _last_dot(fig, MONTHS[m - 1], s_[m], f"<b>{_cv(s_[m], unit, fmt)}</b>", "top left")
         show(style(fig, height=H, legend="top", months=MONTHS, unified=True, fmt=fmt, short=short),
              key=f"{k}_seasonal")
 
     with mid, st.container(border=True, key="mc_card_cum"):
-        cview = chart_head(f"{comm} Cumulative Consumption",
+        cview = chart_head("Cumulative",
                            lambda w: w.radio("Cumulative view", ["Last 4", "All"], horizontal=True,
                                              key=f"{k}_cumview", label_visibility="collapsed"))
         fig = go.Figure()
@@ -435,7 +434,7 @@ def _charts(ctx, proj):
 
     with r, st.container(border=True, key="mc_card_rolling"):
         seed(f"{k}_roll", "12m")
-        win = chart_head(f"{comm} Rolling Consumption",
+        win = chart_head("Rolling",
                          lambda w: w.radio("Window", ["1m", "3m", "6m", "12m"], horizontal=True, key=f"{k}_roll",
                                            label_visibility="collapsed"))
         def rolling(pv):
@@ -467,23 +466,21 @@ def _ytd(ctx):
     """YTD bars: total and YoY % (green / red) stacked above every bar; current year bold navy."""
     years, latest_cy, ytd, yoy, cut, shown, sc, unit, fmt = (
         ctx[k_] for k_ in ("years", "latest_cy", "ytd", "yoy", "cut", "shown", "sc", "unit", "fmt"))
-    st.markdown(f"<div class='tbl-head'><div class='chart-head'>{ctx['comm']} YTD {cut}</div></div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='tbl-head'><div class='chart-head'>YTD {cut}</div></div>", unsafe_allow_html=True)
     yy = [y for y in years if y in shown or y == latest_cy]
     colors = [NAVY if y == latest_cy else "#c3cbe0" for y in yy]
     labels = [f"{yoy[y]:+.1f}%" if pd.notna(yoy[y]) else "" for y in yy]
     fig = go.Figure(go.Bar(x=yy, y=ytd[yy].values, marker_color=colors,
                            hovertemplate=f"%{{x}}: %{{y:{fmt}}} {unit}<extra></extra>"))
-    for y, lab in zip(yy, labels):                                 # total + YoY % stacked above every bar
+    for y, lab in zip(yy, labels):                                 # YoY above every bar, value on the latest only
         v = float(ytd[y])
-        latest = y == latest_cy
-        tot_txt = f"<b>{_cv(v, unit, fmt)}</b>" if latest else _cv(v, unit, fmt)
-        yo_txt = (f"<br><span style='color:{GREEN if lab.startswith('+') else RED};font-size:10px'><b>{lab}</b></span>"
-                  if lab else "")
-        fig.add_annotation(x=y, y=v, text=tot_txt + yo_txt, showarrow=False, yanchor="bottom", yshift=3,
-                           font=dict(size=11 if latest else 9.5, color=NAVY if latest else AXIS))
-    rows = len(yy) + 5                                             # roughly the table's height, so the two end level
-    show(style(fig, height=max(260, 40 + rows * 18), legend=None, fmt=fmt, short=unit == "Bags", bargap=0.45,
-               yaxis=dict(rangemode="tozero")), key="mc_ytd")
+        top = f"<b>{_cv(v, unit, fmt)}</b><br>" if y == latest_cy else ""
+        if top or lab:
+            fig.add_annotation(x=y, y=v, text=top + f"<span style='color:{GREEN if lab.startswith('+') else RED}'>{lab}</span>",
+                               showarrow=False, yanchor="bottom", yshift=2, font=dict(size=9, color=NAVY))
+    vals = ytd[yy].astype(float)
+    show(style(fig, height=CARD_H, legend=None, fmt=fmt, short=unit == "Bags", bargap=0.3,
+               yaxis=dict(range=_zoom(vals)), xaxis=dict(tickangle=-45, tickfont=dict(size=9))), key="mc_ytd")
 
 
 def _pace(ctx, proj):
@@ -511,13 +508,13 @@ def _pace(ctx, proj):
             sh5 = float(shares[full[-5:]].mean())
             center = now / sh5 if sh5 > 0 else np.nan
 
-    st.markdown(f"<div class='tbl-head'><div class='chart-head'>{ctx['comm']} Full-Year Totals</div></div>", unsafe_allow_html=True)
+    st.markdown("<div class='tbl-head'><div class='chart-head'>Full-year totals</div></div>", unsafe_allow_html=True)
 
     full_yy = [y for y in yy if y != latest_cy or common >= 12]
     colors = ["#c3cbe0"] * len(full_yy)
     fig = go.Figure(go.Bar(x=full_yy, y=tot[full_yy].values, marker=dict(color=colors, line=dict(width=0)),
-                           text=[c(tot[y]) for y in full_yy],
-                           textposition="outside", textfont=dict(size=9, color=AXIS), cliponaxis=False,
+                           text=[c(tot[y]) if y == full_yy[-1] else "" for y in full_yy],
+                           textposition="outside", textfont=dict(size=9, color=NAVY), cliponaxis=False,
                            hovertemplate=f"%{{x}}: %{{y:{fmt}}} {unit}<extra></extra>", name="Full year"))
     if pd.notna(center):
         fig.add_trace(go.Bar(x=[latest_cy], y=[now], marker=dict(color=NAVY, line=dict(width=0)), name="YTD",
@@ -530,16 +527,26 @@ def _pace(ctx, proj):
                              cliponaxis=False,
                              hovertemplate=(f"Projected full year: {format(center, fmt)} {unit}<br>"
                                             f"Range: {format(lo, fmt)} – {format(hi, fmt)}<extra></extra>")))
-    rows = len(yy) + 5                                             # roughly the table's height, so the cards end level
-    show(style(fig, height=max(260, 40 + rows * 18), legend=None, fmt=fmt, short=unit == "Bags", barmode="stack",
-               bargap=0.35, yaxis=dict(rangemode="tozero")), key="mc_pace")
+    vals = pd.concat([tot[full_yy].astype(float), pd.Series([hi, center]).dropna()])
+    show(style(fig, height=CARD_H, legend=None, fmt=fmt, short=unit == "Bags", barmode="stack",
+               bargap=0.3, yaxis=dict(range=_zoom(vals)), xaxis=dict(tickangle=-45, tickfont=dict(size=9))), key="mc_pace")
+
+
+CARD_H = 330                 # bar cards beside the table
+
+
+def _zoom(vals):
+    """Y range from just under the lowest bar to just over the highest, so year-to-year differences are visible."""
+    lo, hi = float(vals.min()), float(vals.max())
+    pad = (hi - lo) * 0.25 or hi * 0.05
+    return [max(0.0, lo - pad * 2), hi + pad]
 
 
 def _table(ctx):
     piv, years, latest_cy, common, ref, ytd, yoy, cut, sc, fmt = (
         ctx[k_] for k_ in ("piv", "years", "latest_cy", "common", "ref", "ytd", "yoy", "cut", "sc", "fmt"))
     # rows follow the Years filter (Last 5 / Last 10 / All) so the whole page fits one screen
-    st.markdown(f"<div class='tbl-head'><div class='chart-head'>{ctx['comm']} Monthly Consumption</div></div>",
+    st.markdown("<div class='tbl-head'><div class='chart-head'>Monthly table</div></div>",
                 unsafe_allow_html=True)
     _heatmap(piv, ctx["shown"], latest_cy, common, ytd, yoy, ref, fmt, cut)
 
