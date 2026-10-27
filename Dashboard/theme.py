@@ -226,9 +226,13 @@ APP_CSS = """
   .st-key-nav div[role="radiogroup"] label:last-child div[data-testid="stMarkdownContainer"] p { color:#7b1e3a !important; font-weight:600; }
   .st-key-nav div[role="radiogroup"] label:last-child:has(input:checked) { background:linear-gradient(180deg,#9a2a4c,#7b1e3a) !important; }
   .st-key-nav div[role="radiogroup"] label:last-child:has(input:checked) div[data-testid="stMarkdownContainer"] p { color:#ffffff !important; }
-  [class*="st-key-sum_"] { background:linear-gradient(160deg,#fdf8f9,#f8eef1) !important; border:1px solid rgba(123,30,58,.14) !important;
-    border-radius:18px !important; padding:14px 18px 10px !important; box-shadow:0 4px 14px rgba(123,30,58,.06) !important; }
-  [class*="st-key-sum_"] .chart-head { color:#7b1e3a !important; }
+  .sum { border-collapse:collapse; font-family:Plus Jakarta Sans, sans-serif; font-size:13px; margin:6px 0 10px; min-width:640px; }
+  .sum th { text-align:left; font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:#7b1e3a;
+            padding:6px 22px 6px 0; border-bottom:1.5px solid rgba(123,30,58,.35); }
+  .sum td { padding:9px 22px 9px 0; border-bottom:1px solid rgba(123,30,58,.10); color:#1a1a2e; }
+  .sum td.n { font-weight:700; color:#7b1e3a; white-space:nowrap; }
+  .sum td.m { color:#7a86a8; }
+  .sum-note { font-family:Plus Jakarta Sans, sans-serif; font-size:11.5px; color:#8a94a8; max-width:720px; line-height:1.5; }
   .sb-foot { font-family:Plus Jakarta Sans, sans-serif; font-size:11px; color:#8a94a8; line-height:1.5; margin-top:14px; }
 </style>
 """
