@@ -7,7 +7,7 @@ ROWS = [
     ("Consumption", "How much coffee Germany drinks each month", "Coffee tax ÷ €2.19 per kilo"),
     ("Origins", "Which countries Germany buys raw coffee from", "Customs, by country"),
     ("Trade Balance", "Coffee in, coffee out, and what is left", "Customs + coffee tax"),
-    ("Import Prices", "What Germany paid for raw coffee", "Money paid ÷ weight"),
+    ("Import Prices", "What Germany paid for raw coffee", "Money paid ÷ weight; mainly Arabica, mainly Robusta and Brazil"),
 ]
 NOTE = ("Source: Destatis. New numbers every month; trade comes one month after tax. "
         "A coffee year runs October to September. Consumption is an estimate and prices trail the market by a few months.")

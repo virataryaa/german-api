@@ -5,11 +5,19 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from common import (H, AMBER, AXIS, EUROPE, GREY, LB_PER_T, NAVY, RED, ROBUSTA, SERIES, base, card_head, hero,
+from common import (H, AMBER, AXIS, EUROPE, GREY, LB_PER_T, NAVY, RED, ROBUSTA, SERIES, TEAL, base, card_head, hero,
                     load_origins, latest_month, pct, show, table)
 
 CCY = {"USc/lb": ("imp_usd_k", 1e5 / LB_PER_T, ",.0f"), "EUR/kg": ("imp_eur_k", 1.0, ",.2f")}
 MIN_T = 1000             # an origin needs this many tonnes in the window to get a price
+# Customs codes do not split Arabica from Robusta, so origins are grouped by what they mostly grow.
+# Brazil ships both (Arabica + Conilon) and is a third of the volume, so it gets its own line.
+ARA, ROB, BRA = "Mainly Arabica origins", "Mainly Robusta origins", "Brazil"
+GROUP_C = {ARA: NAVY, ROB: AMBER, BRA: TEAL}
+
+
+def group(country):
+    return BRA if country == "Brazil" else ROB if country in ROBUSTA else ARA
 
 
 def sidebar():
@@ -31,12 +39,11 @@ def render(ccy, smooth, since):
     o = o[(o["product"] == "Green") & ~o["country"].isin(EUROPE) & (o["imp_t"] > 0)]
     last = latest_month(o)
     o = o[o["date"] <= last]
-    o["grp"] = np.where(o["country"].isin(ROBUSTA), "Robusta origins", "Arabica origins")
+    o["grp"] = o["country"].map(group)
 
     g = o.groupby(["date", "grp"])[[col, "imp_t"]].sum().unstack()
     g = g.rolling(win).sum()
-    a_ = _uv(g[col]["Arabica origins"], g["imp_t"]["Arabica origins"], k)
-    r_ = _uv(g[col]["Robusta origins"], g["imp_t"]["Robusta origins"], k)
+    grp_uv = {n: _uv(g[col][n], g["imp_t"][n], k) for n in (ARA, ROB, BRA)}
     t = o.groupby("date")[[col, "imp_t"]].sum().rolling(win).sum()
     tot = _uv(t[col], t["imp_t"], k)
 
@@ -49,9 +56,10 @@ def render(ccy, smooth, since):
     # ── Row 1: Arabica vs Robusta | chosen origins ──
     l, r = st.columns(2, gap="small")
     with l, st.container(border=True):
-        card_head("Arabica vs Robusta origins")
+        card_head("Mainly Arabica vs mainly Robusta origins")
         fig = go.Figure()
-        for s_, nm, c, w in [(a_, "Arabica origins", NAVY, 2.4), (r_, "Robusta origins", AMBER, 2.4), (tot, "All", GREY, 1.3)]:
+        for s_, nm, c, w in [(grp_uv[ARA], ARA, NAVY, 2.4), (grp_uv[ROB], ROB, AMBER, 2.4), (grp_uv[BRA], BRA, TEAL, 2),
+                             (tot, "All", GREY, 1.2)]:
             s_ = s_.loc[since:]
             fig.add_scatter(x=s_.index, y=s_.values, name=nm, mode="lines", line=dict(color=c, width=w),
                             hovertemplate=f"{nm}: %{{y:{fmt}}}<extra></extra>")
@@ -84,7 +92,7 @@ def render(ccy, smooth, since):
     with st.container(border=True):
         card_head(f"Price by origin, {lw:%b}–{last:%b %Y} vs a year ago")
         top = now3.sort_values("imp_t").tail(16).sort_values("uv", ascending=False)
-        fig = go.Figure(go.Bar(x=top.index, y=top["uv"], marker_color=[AMBER if c in ROBUSTA else NAVY for c in top.index],
+        fig = go.Figure(go.Bar(x=top.index, y=top["uv"], marker_color=[GROUP_C[group(c)] for c in top.index],
                                text=[format(v, fmt) for v in top["uv"]], textposition="outside", textfont=dict(size=9.5, color=AXIS),
                                cliponaxis=False, hovertemplate=f"%{{x}}: %{{y:{fmt}}} {ccy}<extra></extra>", name="Now"))
         fig.add_scatter(x=top.index, y=ly3["uv"].reindex(top.index), mode="markers", name="Year ago",
@@ -100,7 +108,7 @@ def render(ccy, smooth, since):
         for cn in now3.sort_values("imp_t", ascending=False).index[:20]:
             p_now, p_ly = now3.loc[cn, "uv"], ly3["uv"].get(cn, np.nan)
             ch = pct(p_now, p_ly)
-            rows.append([(cn, "n"), ("Robusta" if cn in ROBUSTA else "Arabica", ""), (format(p_now, fmt), "b"),
+            rows.append([(cn, "n"), ({ARA: "Mainly Arabica", ROB: "Mainly Robusta", BRA: "Both"}[group(cn)], ""), (format(p_now, fmt), "b"),
                          (format(p_ly, fmt) if pd.notna(p_ly) else "", ""),
                          ("" if pd.isna(ch) else f"{ch:+.1f}%", "up" if pd.notna(ch) and ch >= 0 else "dn"),
                          (f"{vol12.get(cn, 0):,.0f}", ""), (f"{vol12.get(cn, 0) / vol12.sum() * 100:.1f}%", "")])
