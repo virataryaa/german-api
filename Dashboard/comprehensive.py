@@ -70,7 +70,10 @@ CSS = """
 .tbl-wrap { width: fit-content; max-width: 100%; margin: 0 auto 4px; }
 .tbl.fixed { table-layout: auto; width: auto; }
 .tbl td, .tbl th { padding-left: 9px; padding-right: 9px; }
-.tbl-head { text-align: center; margin-top: 4px; }
+.tbl-head { text-align: center; margin: 8px 0 4px; }
+[class*="st-key-mc_card_"] div[role="radiogroup"] { flex-wrap: nowrap !important; padding: 2px !important; box-shadow: none !important; }
+[class*="st-key-mc_card_"] div[role="radiogroup"] label { padding: 2px 9px !important; }
+[class*="st-key-mc_card_"] div[role="radiogroup"] label div[data-testid="stMarkdownContainer"] p { font-size: 11px !important; white-space: nowrap; }
 .tbl td.x { font-weight: 700; }
 /* 1 + 7. Navy header bar: the title div itself is the bar, so it always wraps the text */
 .mc-hero-t { color: #ffffff; font-size: 20px; font-weight: 700; letter-spacing: .01em; line-height: 1.3;
@@ -163,7 +166,7 @@ def heading(title, desc=""):
 
 def chart_head(title, control):
     """Title with its toggle on the same line (right)."""
-    h, w = st.columns([1, 1], vertical_alignment="center")
+    h, w = st.columns([1, 2.2], vertical_alignment="center")
     h.markdown(f"<div class='chart-head'>{title}</div>", unsafe_allow_html=True)
     return control(w)
 
@@ -342,13 +345,17 @@ def _views_body(raw, gbe, title, comm, unit, span, b3):
         st.info("No data for this selection.")
         return
     _charts(ctx, proj)
-    t_col, p_col, y_col = st.columns([2.2, 0.95, 1], gap="small")  # table | full-year totals | YTD bars
+    if ctx["common"] < 12:                                         # table | full-year totals | YTD bars
+        t_col, p_col, y_col = st.columns([2.3, 0.95, 0.95], gap="small")
+    else:                                                          # complete year: YTD = full year, so no YTD card
+        (t_col, p_col), y_col = st.columns([2.6, 1], gap="small"), None
     with t_col, st.container(border=True, key="mc_card_table"):
         _table(ctx)
     with p_col, st.container(border=True, key="mc_card_pace"):
         _pace(ctx, proj)
-    with y_col, st.container(border=True, key="mc_card_ytd"):
-        _ytd(ctx)
+    if y_col is not None:
+        with y_col, st.container(border=True, key="mc_card_ytd"):
+            _ytd(ctx)
 
 
 def _cv(v, unit, fmt):
@@ -457,7 +464,7 @@ def _charts(ctx, proj):
                                      hovertemplate=f"{nm} %{{x|%b-%y}}: %{{y:{fmt}}} {unit}<extra></extra>"))
         if len(roll):
             _last_dot(fig, roll.index[-1], roll.iloc[-1],
-                      f"<b>{_cv(roll.iloc[-1], unit, fmt)}</b> {grey.format(f'{roll.index[-1]:%b-%y}')}", "top left")
+                      f"<b>{_cv(roll.iloc[-1], unit, fmt)}</b>", "top left")
         show(style(fig, height=H, legend="top" if parts else None, fmt=fmt, short=short,
                    yaxis=dict(autorange=True, rangemode="normal")), key=f"{k}_rolling")
 
@@ -511,11 +518,16 @@ def _pace(ctx, proj):
     st.markdown("<div class='tbl-head'><div class='chart-head'>Full-year totals</div></div>", unsafe_allow_html=True)
 
     full_yy = [y for y in yy if y != latest_cy or common >= 12]
-    colors = ["#c3cbe0"] * len(full_yy)
+    colors = [NAVY if y == latest_cy else "#c3cbe0" for y in full_yy]
     fig = go.Figure(go.Bar(x=full_yy, y=tot[full_yy].values, marker=dict(color=colors, line=dict(width=0)),
                            text=[c(tot[y]) if y == full_yy[-1] else "" for y in full_yy],
                            textposition="outside", textfont=dict(size=9, color=NAVY), cliponaxis=False,
                            hovertemplate=f"%{{x}}: %{{y:{fmt}}} {unit}<extra></extra>", name="Full year"))
+    fy = tot.pct_change(fill_method=None) * 100
+    for y in full_yy:
+        if pd.notna(fy.get(y)):
+            fig.add_annotation(x=y, y=float(tot[y]), text=f"{fy[y]:+.1f}%", showarrow=False, yanchor="bottom",
+                               yshift=14 if y == full_yy[-1] else 2, font=dict(size=9, color=GREEN if fy[y] >= 0 else RED))
     if pd.notna(center):
         fig.add_trace(go.Bar(x=[latest_cy], y=[now], marker=dict(color=NAVY, line=dict(width=0)), name="YTD",
                              hovertemplate=f"YTD: %{{y:{fmt}}} {unit}<extra></extra>"))
@@ -630,7 +642,8 @@ def _projection(piv, latest_cy, prev_cy, common, ref, unit, fmt):
 
 
 def _heatmap(piv, shown, latest_cy, common, ytd, yoy, ref, fmt, cut):
-    hdr = MONTHS + ["Total", "Total YoY", f"YTD ({cut})", "YTD YoY"]
+    running = common < 12
+    hdr = MONTHS + ["Total", "YoY"] + ([f"YTD {cut}", "YTD YoY"] if running else [])
     body = piv.loc[[y for y in shown if y in piv.index]]
     vals = body.to_numpy(dtype=float)
     vals = vals[~np.isnan(vals) & (vals > 0)]
@@ -651,8 +664,9 @@ def _heatmap(piv, shown, latest_cy, common, ytd, yoy, ref, fmt, cut):
     for y in body.index:
         s = body.loc[y]
         total = "" if y == latest_cy and common < 12 else format(s.sum(), fmt)
-        cells = month_cells(s) + [t_cell(total, "x"), yoy_cell(tyoy.get(y, np.nan)),
-                                  t_cell(format(ytd[y], fmt), "x"), yoy_cell(yoy.get(y, np.nan))]
+        cells = month_cells(s) + [t_cell(total, "x"), yoy_cell(tyoy.get(y, np.nan))]
+        if running:
+            cells += [t_cell(format(ytd[y], fmt), "x"), yoy_cell(yoy.get(y, np.nan))]
         rows.append(t_row(y, cells))
         if y == latest_cy and len(ref) >= 2:
             avg = piv.loc[ref].mean()
@@ -660,16 +674,16 @@ def _heatmap(piv, shown, latest_cy, common, ytd, yoy, ref, fmt, cut):
                    for m in range(1, 13)]
             lim = max([abs(v) for v in dev if pd.notna(v)] or [20])
             dc = [t_cell("") if pd.isna(v) else t_cell(f"{v:+.0f}%", "up" if v > 0 else "down") for v in dev]
-            rows.append(t_row(f"vs Avg L{len(ref)}Y", dc + [t_cell("", "x")] * 3 + [t_cell("")], "ref"))
+            rows.append(t_row(f"vs Avg L{len(ref)}Y", dc + [t_cell("", "x"), t_cell("")] * (2 if running else 1), "ref"))
 
     if len(ref) >= 2:
         rows.append(t_sep(len(hdr) + 1))
         rb = piv.loc[ref]
         tot, ytd_r = rb.sum(axis=1), ytd[ref]
         for name, agg in [("Min", "min"), ("Avg", "mean"), ("Max", "max")]:
-            cells = month_cells(getattr(rb, agg)(), heat=False) + [
-                t_cell(format(getattr(tot, agg)(), fmt), "x"), t_cell(""),
-                t_cell(format(getattr(ytd_r, agg)(), fmt), "x"), t_cell("")]
+            cells = month_cells(getattr(rb, agg)(), heat=False) + [t_cell(format(getattr(tot, agg)(), fmt), "x"), t_cell("")]
+            if running:
+                cells += [t_cell(format(getattr(ytd_r, agg)(), fmt), "x"), t_cell("")]
             rows.append(t_row(f"{name} L{len(ref)}Y", cells, "ref"))
 
     t_render(hdr, rows, corner="Crop year")
