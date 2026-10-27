@@ -42,9 +42,9 @@ def render(_=None):
                 "New numbers come in every month. A coffee year runs from October to September.</div>", unsafe_allow_html=True)
     for i in range(0, len(PAGES), 2):
         for col, (name, what, points) in zip(st.columns(2, gap="medium"), PAGES[i:i + 2]):
-            with col, st.container(border=True):
+            with col, st.container(key=f"sum_{name.replace(' ', '_').lower()}"):
                 card_head(name, what)
                 st.markdown(UL.format("".join(f"<li>{p}</li>" for p in points)), unsafe_allow_html=True)
-    with st.container(border=True):
+    with st.container(key="sum_note"):
         card_head("Note")
         st.markdown(UL.format("".join(f"<li>{p}</li>" for p in NOTES)), unsafe_allow_html=True)

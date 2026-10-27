@@ -23,7 +23,8 @@ st.markdown(FONT_CSS, unsafe_allow_html=True)
 st.markdown(COT_CSS, unsafe_allow_html=True)
 st.markdown(APP_CSS, unsafe_allow_html=True)
 
-PAGES = {"Summary": views_summary, "Consumption": views_consumption, "Origins": views_origins, "Trade Balance": views_trade, "Import Prices": views_prices}
+PAGES = {"Consumption": views_consumption, "Origins": views_origins, "Trade Balance": views_trade, "Import Prices": views_prices,
+         "Summary": views_summary}
 
 with st.sidebar:
     st.markdown("<div class='sb-title'>German Coffee</div><div class='sb-rule'></div>", unsafe_allow_html=True)

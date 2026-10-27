@@ -205,6 +205,15 @@ APP_CSS = """
   .gt td.b { font-weight:700; } .gt td.up { color:#1f9d6f; font-weight:700; } .gt td.dn { color:#c94a4a; font-weight:700; }
   .gt tr.tot td { border-top:1.5px solid rgba(43,74,138,.25); font-weight:700; background:#f5f8fc; }
   .tbl-scroll { overflow-x:auto; }
+  /* Summary: last sidebar pill and its page cards in a soft wine shade, set apart from the data pages */
+  .st-key-nav div[role="radiogroup"] label:last-child { margin-top:10px; position:relative; }
+  .st-key-nav div[role="radiogroup"] label:last-child::before { content:""; position:absolute; left:12px; right:12px; top:-7px; height:1px; background:rgba(123,30,58,.18); }
+  .st-key-nav div[role="radiogroup"] label:last-child div[data-testid="stMarkdownContainer"] p { color:#7b1e3a !important; font-weight:600; }
+  .st-key-nav div[role="radiogroup"] label:last-child:has(input:checked) { background:linear-gradient(180deg,#9a2a4c,#7b1e3a) !important; }
+  .st-key-nav div[role="radiogroup"] label:last-child:has(input:checked) div[data-testid="stMarkdownContainer"] p { color:#ffffff !important; }
+  [class*="st-key-sum_"] { background:linear-gradient(160deg,#fdf8f9,#f8eef1) !important; border:1px solid rgba(123,30,58,.14) !important;
+    border-radius:18px !important; padding:14px 18px 10px !important; box-shadow:0 4px 14px rgba(123,30,58,.06) !important; }
+  [class*="st-key-sum_"] .chart-head { color:#7b1e3a !important; }
   .sb-foot { font-family:Plus Jakarta Sans, sans-serif; font-size:11px; color:#8a94a8; line-height:1.5; margin-top:14px; }
 </style>
 """
