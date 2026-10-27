@@ -2,10 +2,19 @@ import streamlit as st
 
 st.set_page_config(page_title="German Coffee", layout="wide", initial_sidebar_state="expanded")
 
+import importlib
+
+import common
 import comprehensive
+import theme
 import views_origins
 import views_prices
 import views_trade
+
+# Streamlit reruns only this file; reload the helpers so a push does not leave stale modules in a running app
+for _m in (theme, common, comprehensive, views_origins, views_trade, views_prices):
+    importlib.reload(_m)
+
 from common import load_origins, load_tax, latest_month
 from theme import APP_CSS, COT_CSS, FONT_CSS
 
