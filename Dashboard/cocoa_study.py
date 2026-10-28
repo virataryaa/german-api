@@ -18,8 +18,9 @@ CORR_SET = ["Ivory Coast", "Ghana", "Nigeria", "Cameroon", "Ecuador", "Peru", "D
 def sidebar():
     st.markdown("<div class='sb-lbl'>Study</div>", unsafe_allow_html=True)
     ccy = st.radio("Price unit", list(CCY), horizontal=True, key="cs_ccy")
+    win = st.radio("Window", ["1m", "3m", "6m"], index=1, horizontal=True, key="cs_win")
     since = st.radio("History from", ["2006", "2012", "2018"], index=1, horizontal=True, key="cs_since")
-    return ccy, since
+    return ccy, int(win[:-1]), since
 
 
 def _region_monthly(o, col):
@@ -29,7 +30,7 @@ def _region_monthly(o, col):
     return m, tot
 
 
-def render(ccy, since):
+def render(ccy, win, since):
     col = CCY[ccy]
     o = load_origins("cocoa")
     o = o[(o["product"] == "Beans") & ~o["country"].isin(EUROPE) & (o["imp_t"] > 0)]
@@ -37,16 +38,16 @@ def render(ccy, since):
     o = o[o["date"] <= last]
     m, tot = _region_monthly(o, col)
 
-    r3 = m.rolling(3).sum()                                         # 3-month volume-weighted
+    r3 = m.rolling(win).sum()                                       # volume-weighted over the window
     wa = r3[col]["WA"] / r3["imp_t"]["WA"] * 1e3
     la = r3[col]["LA"] / r3["imp_t"]["LA"] * 1e3
     gap = (la - wa)
     gap_pct = (la / wa - 1) * 100
-    share = r3["imp_t"]["LA"] / tot.rolling(3).sum() * 100
+    share = r3["imp_t"]["LA"] / tot.rolling(win).sum() * 100
     d = pd.DataFrame({"wa": wa, "la": la, "gap": gap, "gap_pct": gap_pct, "share": share}).dropna()
     dv = d.loc[since:]
 
-    hero("Study: West Africa vs Latin America", f" · cocoa beans into Germany · {ccy} · 3-month windows", [f"Latest {last:%b %Y}"])
+    hero("Study: West Africa vs Latin America", f" · cocoa beans into Germany · {ccy} · {win}-month window", [f"Latest {last:%b %Y}"])
 
     # ── Row 1: prices + gap | gap vs Latin America share ──
     l, r = st.columns(2, gap="small")
@@ -112,7 +113,7 @@ def render(ccy, since):
 
     # ── Row 3: country gaps | price correlation matrix ──
     l, r = st.columns([1.3, 1], gap="small")
-    by = o.groupby(["date", "country"])[[col, "imp_t"]].sum().unstack().fillna(0).rolling(3).sum()
+    by = o.groupby(["date", "country"])[[col, "imp_t"]].sum().unstack().fillna(0).rolling(win).sum()
     wa_core = (by[col][["Ivory Coast", "Ghana"]].sum(axis=1) / by["imp_t"][["Ivory Coast", "Ghana"]].sum(axis=1)) * 1e3
     with l, st.container(border=True):
         card_head("Latin American origins vs Ivory Coast + Ghana, price gap")
@@ -130,6 +131,7 @@ def render(ccy, since):
         px = pd.DataFrame({c: (by[col][c] / by["imp_t"][c] * 1e3).where(by["imp_t"][c] >= 150)
                            for c in CORR_SET if c in by[col]}).loc[since:]
         cm = px.pct_change(fill_method=None).corr(min_periods=24)
+        cm = cm.mask(np.eye(len(cm), dtype=bool))                  # blank the 1.00 diagonal
         fig = go.Figure(go.Heatmap(z=cm.values, x=cm.columns, y=cm.index, zmin=-1, zmax=1,
                                    colorscale=[[0, RED], [0.5, "#ffffff"], [1, NAVY]], showscale=False,
                                    text=[[f"{v:.2f}" if pd.notna(v) else "" for v in row] for row in cm.values],
