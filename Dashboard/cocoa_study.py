@@ -140,10 +140,12 @@ def render(ccy, win, since):
             card_head(title)
             cm = frame.corr(min_periods=24)
             cm = cm.mask(np.eye(len(cm), dtype=bool))              # blank the 1.00 diagonal
-            fig = go.Figure(go.Heatmap(z=cm.values, x=cm.columns, y=cm.index, zmin=-1, zmax=1,
-                                       colorscale=[[0, RED], [0.5, "#ffffff"], [1, NAVY]], showscale=False,
+            vals = cm.stack()                                      # soft scale over this matrix's own range
+            fig = go.Figure(go.Heatmap(z=cm.values, x=cm.columns, y=cm.index, zmin=float(vals.min()), zmax=float(vals.max()),
+                                       colorscale=[[0, "#fbfcfe"], [0.5, "#dbe6f5"], [1, "#9fbbe3"]], showscale=False,
                                        text=[[f"{v:.2f}" if pd.notna(v) else "" for v in row] for row in cm.values],
-                                       texttemplate="%{text}", textfont=dict(size=10), hovertemplate="%{y} × %{x}: %{z:.2f}<extra></extra>"))
+                                       texttemplate="%{text}", textfont=dict(size=10, color="#1a1a2e"),
+                                       hovertemplate="%{y} × %{x}: %{z:.2f}<extra></extra>", xgap=2, ygap=2))
             show(base(fig, H, legend=None, unified=False, xaxis=dict(tickangle=-35, tickfont=dict(size=9.5, color=AXIS), showline=False),
                       yaxis=dict(autorange="reversed", tickfont=dict(size=9.5, color=AXIS), showgrid=False, showline=False)), key)
 
