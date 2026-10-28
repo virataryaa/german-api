@@ -107,7 +107,8 @@ def render(comm, ccy, smooth, since):
         return w.assign(uv=_uv(w[col], w["imp_t"], k))
     now3, ly3 = window(lw, last), window(lw_ly, last_ly)
     now3 = now3[now3["imp_t"] >= min_t].sort_values("uv")
-    with st.container(border=True):
+    l2, r2 = st.columns([1.15, 1], gap="small")
+    with l2, st.container(border=True):
         card_head(f"Price by origin, {lw:%b}–{last:%b %Y} vs a year ago")
         top = now3.sort_values("imp_t").tail(16).sort_values("uv", ascending=False)
         fig = go.Figure(go.Bar(x=top.index, y=top["uv"], marker_color=[grp_c[grp_of(c)] for c in top.index],
@@ -116,14 +117,14 @@ def render(comm, ccy, smooth, since):
         fig.add_scatter(x=top.index, y=ly3["uv"].reindex(top.index), mode="markers", name="Year ago",
                         marker=dict(symbol="line-ew-open", size=22, line=dict(width=2.4, color=RED)),
                         hovertemplate=f"%{{x}} a year ago: %{{y:{fmt}}}<extra></extra>")
-        show(base(fig, 290, unified=False, bargap=0.35, xaxis=dict(tickfont=dict(size=9.5, color=AXIS)),
+        show(base(fig, 430, unified=False, bargap=0.35, xaxis=dict(tickfont=dict(size=9.5, color=AXIS)),
                   yaxis=dict(tickformat=fmt)), "ip_rank")
 
     # ── Table ──
-    with st.container(border=True):
+    with r2, st.container(border=True):
         card_head("Origin price table")
         rows = []
-        for cn in now3.sort_values("imp_t", ascending=False).index[:20]:
+        for cn in now3.sort_values("imp_t", ascending=False).index[:16]:
             p_now, p_ly = now3.loc[cn, "uv"], ly3["uv"].get(cn, np.nan)
             ch = pct(p_now, p_ly)
             rows.append([(cn, "n"), ({ARA: "Mainly Arabica", ROB: "Mainly Robusta", BRA: "Both"}.get(grp_of(cn), grp_of(cn)), ""), (format(p_now, fmt), "b"),
