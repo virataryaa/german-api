@@ -64,8 +64,7 @@ def render(ccy, win, since, ga, gb, na, nb):
     hero(f"Study: {na} vs {nb}", f" · cocoa beans into Germany · {ccy} · {win}-month window", [f"Latest {last:%b %Y}"])
 
     # ── Row 1: prices + gap | gap vs B's share ──
-    l, r = st.columns(2, gap="small")
-    with l, st.container(border=True):
+    with st.container(border=True):
         card_head(f"Price by group and the gap ({nb} − {na})")
         fig = make_subplots(rows=2, cols=1, shared_xaxes=True, row_heights=[0.62, 0.38], vertical_spacing=0.06)
         fig.add_scatter(x=dv.index, y=dv["b"], name=nb, line=dict(color=AMBER, width=2.2), row=1, col=1)
@@ -76,7 +75,7 @@ def render(ccy, win, since, ga, gb, na, nb):
         fig.update_xaxes(showgrid=False, tickfont=dict(size=10, color=AXIS))
         show(fig, "cs_px")
 
-    with r, st.container(border=True):
+    with st.container(border=True):
         card_head(f"Price gap vs {nb} share of volume")
         fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.05, row_heights=[0.42, 0.58],
                             specs=[[{}], [{"secondary_y": True}]])
