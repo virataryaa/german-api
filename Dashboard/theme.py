@@ -234,10 +234,8 @@ APP_CSS = """
   .st-key-nav_cocoa div[role="radiogroup"] label:nth-last-child(2):has(input:checked) { background:linear-gradient(180deg,#9a2a4c,#7b1e3a) !important; }
   .st-key-nav_coffee div[role="radiogroup"] label:last-child:has(input:checked) div[data-testid="stMarkdownContainer"] p,
   .st-key-nav_cocoa div[role="radiogroup"] label:nth-last-child(2):has(input:checked) div[data-testid="stMarkdownContainer"] p { color:#ffffff !important; }
-  .st-key-nav_cocoa div[role="radiogroup"] label:last-child { margin-top:22px; position:relative; border:1px solid rgba(217,112,26,.45) !important;
+  .st-key-nav_cocoa div[role="radiogroup"] label:last-child { margin-top:14px; position:relative; border:1px solid rgba(217,112,26,.45) !important;
     background:linear-gradient(135deg, rgba(240,146,58,.14), rgba(217,112,26,.06)) !important; animation:studyGlow 2.8s ease-in-out infinite; }
-  .st-key-nav_cocoa div[role="radiogroup"] label:last-child::before { content:"NEW · STUDY"; position:absolute; left:14px; top:-16px;
-    font-size:9px; font-weight:800; letter-spacing:.14em; color:#d9701a; }
   .st-key-nav_cocoa div[role="radiogroup"] label:last-child div[data-testid="stMarkdownContainer"] p { color:#c2600f !important; font-weight:700; }
   .st-key-nav_cocoa div[role="radiogroup"] label:last-child:has(input:checked) { background:linear-gradient(135deg,#f0923a,#d9701a) !important; animation:none; }
   .st-key-nav_cocoa div[role="radiogroup"] label:last-child:has(input:checked) div[data-testid="stMarkdownContainer"] p { color:#ffffff !important; }

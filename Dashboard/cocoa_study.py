@@ -78,16 +78,22 @@ def render(ccy, win, since, ga, gb, na, nb):
 
     with r, st.container(border=True):
         card_head(f"Price gap vs {nb} share of volume")
-        fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.06)
-        fig.add_scatter(x=dv.index, y=dv["gap"], name=f"Price gap, {ccy} ({nb} − {na})", line=dict(color=TEAL, width=2),
+        fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.05, row_heights=[0.42, 0.58],
+                            specs=[[{}], [{"secondary_y": True}]])
+        fig.add_scatter(x=dv.index, y=dv["gap"], name=f"Price gap, {ccy}", line=dict(color=TEAL, width=2),
                         hovertemplate="%{y:,.0f}<extra></extra>", row=1, col=1)
-        fig.add_scatter(x=dv.index, y=dv["share"], name=f"{nb} share %", line=dict(color=AMBER, width=2),
-                        fill="tozeroy", fillcolor=rgba(AMBER, 0.12), hovertemplate="%{y:.1f}%<extra></extra>", row=2, col=1)
-        base(fig, H + 40, xaxis=dict(tickformat="%Y"))
+        vol = pd.DataFrame({"a": ta.rolling(win).sum(), "b": tb.rolling(win).sum()}).loc[dv.index] / 1e3
+        fig.add_bar(x=vol.index, y=vol["a"], name=f"{na} k t", marker_color=rgba(NAVY, 0.30), hovertemplate="%{y:,.1f} k t<extra></extra>",
+                    row=2, col=1)
+        fig.add_bar(x=vol.index, y=vol["b"], name=f"{nb} k t", marker_color=rgba(AMBER, 0.55), hovertemplate="%{y:,.1f} k t<extra></extra>",
+                    row=2, col=1)
+        fig.add_scatter(x=dv.index, y=dv["share"], name=f"{nb} share %", line=dict(color=AMBER, width=2.2),
+                        hovertemplate="%{y:.1f}%<extra></extra>", row=2, col=1, secondary_y=True)
+        base(fig, H + 90, barmode="stack", bargap=0.05, xaxis=dict(tickformat="%Y"))
         fig.update_yaxes(gridcolor="rgba(10,36,99,0.08)", tickfont=dict(size=10, color=AXIS))
         fig.update_yaxes(tickformat=",.0f", row=1, col=1)
-        fig.update_yaxes(ticksuffix="%", row=2, col=1)
-        fig.update_xaxes(showgrid=False, tickfont=dict(size=10, color=AXIS))
+        fig.update_yaxes(tickformat=",.0f", title=dict(text=f"k t, {win}m", font=dict(size=10)), row=2, col=1, secondary_y=False)
+        fig.update_yaxes(ticksuffix="%", showgrid=False, tickfont=dict(size=10, color=AMBER), row=2, col=1, secondary_y=True)
         show(fig, "cs_share")
 
     # ── Row 2: scatter (optional best lag) | lead-lag (levels or YoY changes) ──
