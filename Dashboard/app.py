@@ -5,6 +5,7 @@ st.set_page_config(page_title="German Coffee & Cocoa", layout="wide", initial_si
 import importlib
 
 import cocoa_grind
+import cocoa_study
 import cocoa_trade
 import common
 import comprehensive
@@ -15,7 +16,7 @@ import views_summary
 import views_trade
 
 # Streamlit reruns only this file; reload the helpers so a push does not leave stale modules in a running app
-for _m in (theme, common, comprehensive, cocoa_grind, cocoa_trade, views_summary, views_origins, views_trade, views_prices):
+for _m in (theme, common, comprehensive, cocoa_grind, cocoa_study, cocoa_trade, views_summary, views_origins, views_trade, views_prices):
     importlib.reload(_m)
 
 from common import latest_month, load_grind, load_origins, load_tax
@@ -36,6 +37,7 @@ PAGES = {
               "Origins": (lambda: views_origins.sidebar("cocoa"), views_origins.render),
               "Trade Balance": (cocoa_trade.sidebar, cocoa_trade.render),
               "Import Prices": (lambda: views_prices.sidebar("cocoa"), views_prices.render),
+              "Study": (cocoa_study.sidebar, cocoa_study.render),
               "Summary": (lambda: (), lambda: views_summary.render("cocoa"))},
 }
 
