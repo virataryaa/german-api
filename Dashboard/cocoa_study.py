@@ -10,7 +10,7 @@ from common import (H, AMBER, AXIS, EUROPE, GREEN, GREY, NAVY, RED, SERIES, TEAL
 from views_prices import LATAM, WEST_AFRICA
 
 CCY = {"USD/t": "imp_usd_k", "EUR/t": "imp_eur_k"}
-LAGS = range(-6, 7)
+LAGS = range(-12, 13)
 COUNTRIES = ["Ecuador", "Peru", "Dominican Rep.", "Brazil", "Colombia"]
 CORR_SET = ["Ivory Coast", "Ghana", "Nigeria", "Cameroon", "Ecuador", "Peru", "Dominican Rep."]
 
@@ -75,23 +75,28 @@ def render(ccy, win, since):
         show(fig, "cs_share")
 
     # ── Row 2: scatter | lead-lag ──
-    q = m.loc[since:].resample("QS-OCT").sum()                      # cocoa-year quarters
-    qd = pd.DataFrame({"gap_pct": (q[col]["LA"] / q["imp_t"]["LA"]) / (q[col]["WA"] / q["imp_t"]["WA"]) * 100 - 100,
-                       "share": q["imp_t"]["LA"] / tot.loc[since:].resample("QS-OCT").sum() * 100}).dropna()
-    qd = qd[qd.index + pd.offsets.QuarterEnd(0) <= last]           # complete quarters only
     l, r = st.columns(2, gap="small")
     with l, st.container(border=True):
-        rho = qd["gap_pct"].corr(qd["share"])
-        card_head(f"Gap % vs Latin America share, by quarter (r = {rho:.2f})")
-        b, a = np.polyfit(qd["gap_pct"], qd["share"], 1)
-        xs = np.linspace(qd["gap_pct"].min(), qd["gap_pct"].max(), 20)
-        age = np.arange(len(qd)) / max(len(qd) - 1, 1)
-        fig = go.Figure(go.Scatter(x=qd["gap_pct"], y=qd["share"], mode="markers", name="Quarter",
-                                   marker=dict(size=8, color=age, colorscale=[[0, "#c3cbe0"], [1, NAVY]], line=dict(color="#fff", width=1)),
-                                   text=[f"{i:%b %Y}" for i in qd.index],
+        h, c = st.columns([1.3, 1], vertical_alignment="center")
+        with c:
+            lag_mode = st.radio("Lag", ["No lag", "Best lag ±12m"], horizontal=True, key="cs_lagmode", label_visibility="collapsed")
+        lv = d.loc[since:]
+        lag_r = pd.Series({k: lv["gap_pct"].shift(k).corr(lv["share"]) for k in LAGS})
+        k = int(lag_r.abs().idxmax()) if lag_mode != "No lag" else 0
+        sd = pd.DataFrame({"x": lv["gap_pct"].shift(k), "y": lv["share"]}).dropna()
+        rho = sd["x"].corr(sd["y"])
+        lag_txt = "" if k == 0 else f", gap {abs(k)}m {'earlier' if k > 0 else 'later'}"
+        with h:
+            card_head(f"Gap % vs LatAm share ({win}m{lag_txt}, r = {rho:.2f})")
+        bb, aa = np.polyfit(sd["x"], sd["y"], 1)
+        xs = np.linspace(sd["x"].min(), sd["x"].max(), 20)
+        age = np.arange(len(sd)) / max(len(sd) - 1, 1)
+        fig = go.Figure(go.Scatter(x=sd["x"], y=sd["y"], mode="markers", name="Month",
+                                   marker=dict(size=7, color=age, colorscale=[[0, "#c3cbe0"], [1, NAVY]], line=dict(color="#fff", width=0.8)),
+                                   text=[f"{i:%b %Y}" for i in sd.index],
                                    hovertemplate="%{text}<br>Gap %{x:.1f}%<br>LatAm share %{y:.1f}%<extra></extra>"))
-        fig.add_scatter(x=xs, y=a + b * xs, mode="lines", name="Trend", line=dict(color=RED, dash="dot", width=1.6), hoverinfo="skip")
-        fig.add_scatter(x=[qd["gap_pct"].iloc[-1]], y=[qd["share"].iloc[-1]], mode="markers+text", text=["latest"],
+        fig.add_scatter(x=xs, y=aa + bb * xs, mode="lines", name="Trend", line=dict(color=RED, dash="dot", width=1.6), hoverinfo="skip")
+        fig.add_scatter(x=[sd["x"].iloc[-1]], y=[sd["y"].iloc[-1]], mode="markers+text", text=["latest"],
                         textposition="top center", marker=dict(size=12, color=AMBER, line=dict(color=NAVY, width=1.5)),
                         name="Latest", hoverinfo="skip", textfont=dict(size=9.5, color=AXIS))
         show(base(fig, H, legend=None, unified=False, xaxis=dict(ticksuffix="%", showgrid=True, title=dict(text="price gap %", font=dict(size=10))),
@@ -111,11 +116,10 @@ def render(ccy, win, since):
                   xaxis=dict(dtick=1, title=dict(text="months the gap leads (+) / trails (−) the share", font=dict(size=10))),
                   yaxis=dict(range=[-1, 1], title=dict(text="correlation", font=dict(size=10)))), "cs_lag")
 
-    # ── Row 3: country gaps | price correlation matrix ──
-    l, r = st.columns([1.3, 1], gap="small")
+    # ── Row 3: country gaps ──
     by = o.groupby(["date", "country"])[[col, "imp_t"]].sum().unstack().fillna(0).rolling(win).sum()
     wa_core = (by[col][["Ivory Coast", "Ghana"]].sum(axis=1) / by["imp_t"][["Ivory Coast", "Ghana"]].sum(axis=1)) * 1e3
-    with l, st.container(border=True):
+    with st.container(border=True):
         card_head("Latin American origins vs Ivory Coast + Ghana, price gap")
         fig = go.Figure()
         for i, c in enumerate([c for c in COUNTRIES if c in by[col]]):
@@ -124,20 +128,24 @@ def render(ccy, win, since):
             fig.add_scatter(x=g.index, y=g.values, name=c, mode="lines", connectgaps=False, line=dict(color=SERIES[i + 1], width=1.8),
                             hovertemplate=f"{c}: %{{y:,.0f}}<extra></extra>")
         fig.add_hline(y=0, line=dict(color="rgba(0,0,0,.25)", width=1))
-        show(base(fig, H, xaxis=dict(tickformat="%Y"), yaxis=dict(tickformat=",.0f")), "cs_ctry")
+        show(base(fig, 280, xaxis=dict(tickformat="%Y"), yaxis=dict(tickformat=",.0f")), "cs_ctry")
 
-    with r, st.container(border=True):
-        card_head("Price correlation between origins (monthly changes)")
-        px = pd.DataFrame({c: (by[col][c] / by["imp_t"][c] * 1e3).where(by["imp_t"][c] >= 150)
-                           for c in CORR_SET if c in by[col]}).loc[since:]
-        cm = px.pct_change(fill_method=None).corr(min_periods=24)
-        cm = cm.mask(np.eye(len(cm), dtype=bool))                  # blank the 1.00 diagonal
-        fig = go.Figure(go.Heatmap(z=cm.values, x=cm.columns, y=cm.index, zmin=-1, zmax=1,
-                                   colorscale=[[0, RED], [0.5, "#ffffff"], [1, NAVY]], showscale=False,
-                                   text=[[f"{v:.2f}" if pd.notna(v) else "" for v in row] for row in cm.values],
-                                   texttemplate="%{text}", textfont=dict(size=10), hovertemplate="%{y} × %{x}: %{z:.2f}<extra></extra>"))
-        show(base(fig, H, legend=None, unified=False, xaxis=dict(tickangle=-35, tickfont=dict(size=9.5, color=AXIS), showline=False),
-                  yaxis=dict(autorange="reversed", tickfont=dict(size=9.5, color=AXIS), showgrid=False, showline=False)), "cs_corr")
+    # ── Row 4: correlation of price levels | of price changes ──
+    px = pd.DataFrame({c: (by[col][c] / by["imp_t"][c] * 1e3).where(by["imp_t"][c] >= 150)
+                       for c in CORR_SET if c in by[col]}).loc[since:]
+    l, r = st.columns(2, gap="small")
+    for box, title, frame, key in [(l, "Price correlation between origins (price levels)", px, "cs_corr_lvl"),
+                                   (r, "Price correlation between origins (monthly changes)", px.pct_change(fill_method=None), "cs_corr")]:
+        with box, st.container(border=True):
+            card_head(title)
+            cm = frame.corr(min_periods=24)
+            cm = cm.mask(np.eye(len(cm), dtype=bool))              # blank the 1.00 diagonal
+            fig = go.Figure(go.Heatmap(z=cm.values, x=cm.columns, y=cm.index, zmin=-1, zmax=1,
+                                       colorscale=[[0, RED], [0.5, "#ffffff"], [1, NAVY]], showscale=False,
+                                       text=[[f"{v:.2f}" if pd.notna(v) else "" for v in row] for row in cm.values],
+                                       texttemplate="%{text}", textfont=dict(size=10), hovertemplate="%{y} × %{x}: %{z:.2f}<extra></extra>"))
+            show(base(fig, H, legend=None, unified=False, xaxis=dict(tickangle=-35, tickfont=dict(size=9.5, color=AXIS), showline=False),
+                      yaxis=dict(autorange="reversed", tickfont=dict(size=9.5, color=AXIS), showgrid=False, showline=False)), key)
 
     # ── Table: by crop year ──
     with st.container(border=True):

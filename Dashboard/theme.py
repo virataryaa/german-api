@@ -194,9 +194,9 @@ APP_CSS = """
   [data-testid="stMain"] [data-testid="stPlotlyChart"] > div, [data-testid="stMain"] [data-testid="stPlotlyChart"] .main-svg { border-radius:0 !important; }
   .chart-head { line-height:1.5; padding-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   /* radios inside cards: small one-line segmented pills */
-  .st-key-tb_prod div[role="radiogroup"] { flex-wrap:nowrap !important; padding:2px !important; box-shadow:none !important; }
-  .st-key-tb_prod div[role="radiogroup"] label { padding:2px 9px !important; }
-  .st-key-tb_prod div[role="radiogroup"] label div[data-testid="stMarkdownContainer"] p { font-size:11px !important; white-space:nowrap; }
+  .st-key-tb_prod div[role="radiogroup"], .st-key-cs_lagmode div[role="radiogroup"] { flex-wrap:nowrap !important; padding:2px !important; box-shadow:none !important; }
+  .st-key-tb_prod div[role="radiogroup"] label, .st-key-cs_lagmode div[role="radiogroup"] label { padding:2px 9px !important; }
+  .st-key-tb_prod div[role="radiogroup"] label div[data-testid="stMarkdownContainer"] p, .st-key-cs_lagmode div[role="radiogroup"] label div[data-testid="stMarkdownContainer"] p { font-size:11px !important; white-space:nowrap; }
   [data-testid="stMain"] [data-testid="stVerticalBlockBorderWrapper"] div[role="radiogroup"] { padding:2px !important; flex-wrap:nowrap !important;
     box-shadow:none !important; }
   [data-testid="stMain"] [data-testid="stVerticalBlockBorderWrapper"] div[role="radiogroup"] label { padding:2px 10px !important; }
