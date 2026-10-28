@@ -34,8 +34,8 @@ def sidebar():
     vol = _beans().groupby("country")["imp_t"].sum().sort_values(ascending=False)
     opts = vol.index.tolist()
     da, db = [c for c in opts if c in WEST_AFRICA], [c for c in opts if c in LATAM]
-    a = st.multiselect("Group A", opts, default=da, key="cs_ga")
-    b = st.multiselect("Group B", [c for c in opts if c not in a], default=[c for c in db if c not in a], key="cs_gb")
+    a = st.multiselect("West Africa", opts, default=da, key="cs_ga")
+    b = st.multiselect("Latin America", [c for c in opts if c not in a], default=[c for c in db if c not in a], key="cs_gb")
     return ccy, int(win[:-1]), since, a or da, b or db, _label(a or da, da, "West Africa"), _label(b or db, db, "Latin America")
 
 
@@ -77,13 +77,16 @@ def render(ccy, win, since, ga, gb, na, nb):
         show(fig, "cs_px")
 
     with r, st.container(border=True):
-        card_head(f"Price gap % vs {nb} share of volume")
+        card_head(f"Price gap vs {nb} share of volume")
         fig = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.06)
-        fig.add_scatter(x=dv.index, y=dv["gap_pct"], name="Gap %", line=dict(color=TEAL, width=2), row=1, col=1)
+        fig.add_scatter(x=dv.index, y=dv["gap"], name=f"Price gap, {ccy} ({nb} − {na})", line=dict(color=TEAL, width=2),
+                        hovertemplate="%{y:,.0f}<extra></extra>", row=1, col=1)
         fig.add_scatter(x=dv.index, y=dv["share"], name=f"{nb} share %", line=dict(color=AMBER, width=2),
-                        fill="tozeroy", fillcolor=rgba(AMBER, 0.12), row=2, col=1)
+                        fill="tozeroy", fillcolor=rgba(AMBER, 0.12), hovertemplate="%{y:.1f}%<extra></extra>", row=2, col=1)
         base(fig, H + 40, xaxis=dict(tickformat="%Y"))
-        fig.update_yaxes(ticksuffix="%", gridcolor="rgba(10,36,99,0.08)", tickfont=dict(size=10, color=AXIS))
+        fig.update_yaxes(gridcolor="rgba(10,36,99,0.08)", tickfont=dict(size=10, color=AXIS))
+        fig.update_yaxes(tickformat=",.0f", row=1, col=1)
+        fig.update_yaxes(ticksuffix="%", row=2, col=1)
         fig.update_xaxes(showgrid=False, tickfont=dict(size=10, color=AXIS))
         show(fig, "cs_share")
 
@@ -97,9 +100,9 @@ def render(ccy, win, since, ga, gb, na, nb):
         k = int(lag_r.abs().idxmax()) if lag_mode != "No lag" else 0
         sd = pd.DataFrame({"x": dv["gap_pct"].shift(k), "y": dv["share"]}).dropna()
         rho = sd["x"].corr(sd["y"])
-        lag_txt = "" if k == 0 else f", gap {abs(k)}m {'earlier' if k > 0 else 'later'}"
+        lag_txt = "no lag" if k == 0 else f"gap {abs(k)}m {'earlier' if k > 0 else 'later'}"
         with h:
-            card_head(f"Gap % vs {nb} share ({win}m{lag_txt}, r = {rho:.2f})")
+            card_head(f"Gap % vs {nb} share")
         bb, aa = np.polyfit(sd["x"], sd["y"], 1)
         xs = np.linspace(sd["x"].min(), sd["x"].max(), 20)
         age = np.arange(len(sd)) / max(len(sd) - 1, 1)
@@ -111,7 +114,9 @@ def render(ccy, win, since, ga, gb, na, nb):
         fig.add_scatter(x=[sd["x"].iloc[-1]], y=[sd["y"].iloc[-1]], mode="markers+text", text=["latest"], textposition="top center",
                         marker=dict(size=12, color=AMBER, line=dict(color=NAVY, width=1.5)), name="Latest", hoverinfo="skip",
                         textfont=dict(size=9.5, color=AXIS))
-        show(base(fig, H, legend=None, unified=False, xaxis=dict(ticksuffix="%", showgrid=True, title=dict(text="price gap %", font=dict(size=10))),
+        show(base(fig, H, legend=None, unified=False, xaxis=dict(ticksuffix="%", showgrid=True,
+                                                                   title=dict(text=f"price gap %  ·  <b>lag: {lag_txt}</b>  ·  <b>r = {rho:.2f}</b>  ·  {win}m window",
+                                                                              font=dict(size=10.5, color="#0a2463"))),
                   yaxis=dict(ticksuffix="%", title=dict(text=f"{nb} share", font=dict(size=10)))), "cs_scatter")
 
     with r, st.container(border=True):
@@ -131,6 +136,23 @@ def render(ccy, win, since, ga, gb, na, nb):
         show(base(fig, H, legend=None, unified=False, bargap=0.3,
                   xaxis=dict(dtick=2, title=dict(text="months the gap leads (+) / trails (−) the share", font=dict(size=10))),
                   yaxis=dict(range=[-1, 1], title=dict(text="correlation", font=dict(size=10)))), "cs_lag")
+
+    with st.expander("How to read the lag charts"):
+        kb = int(cors.abs().idxmax())
+        who = ("the price gap moves first and the share follows" if kb > 0 else
+               "the share moves first and the price gap follows" if kb < 0 else "both move in the same month")
+        st.markdown(f"""
+- **Price gap %** = how much more (or less) {nb} beans cost than {na} beans.
+- **Share** = {nb}'s part of all the cocoa beans Germany bought.
+- **Lag** = how many months we slide one line against the other before comparing them.
+    - **Positive lag (+3)**: the gap from 3 months *earlier* is compared with today's share. If this is strongest, the gap *leads*: price moves first, buying follows.
+    - **Negative lag (−3)**: the gap from 3 months *later* is compared with today's share. If this is strongest, the share *leads*: buying moves first, price follows.
+- **r (correlation)** runs from −1 to +1. Near 0 = no link. Negative = when the gap is high, the share is low (dearer beans, Germany buys fewer).
+  Above about 0.4 either way is worth noticing; below 0.2 is mostly noise.
+- **Levels** compares the plain numbers. **YoY changes** compares how much each moved versus a year earlier, which removes slow trends and seasons; if a link survives here it is more believable.
+- **Right now** ({mode.lower()}, {win}m window): the strongest lag is **{kb:+d} months** (r = {cors[kb]:.2f}), so {who}.
+  If the strongest bar sits at ±12, the real lag may be even longer than a year.
+""")
 
     # ── Row 3: every origin against a chosen base ──
     by = by_m.rolling(win).sum()
@@ -160,6 +182,17 @@ def render(ccy, win, since, ga, gb, na, nb):
                             hovertemplate=f"{cn}: %{{y:,.0f}}<extra></extra>")
         fig.add_hline(y=0, line=dict(color="rgba(0,0,0,.25)", width=1))
         show(base(fig, 300, xaxis=dict(tickformat="%Y"), yaxis=dict(tickformat=",.0f", title=dict(text=ccy, font=dict(size=10)))), "cs_ctry")
+
+        card_head(f"Volume gap vs {base_c}")
+        bv = by["imp_t"][base_c]
+        fig = go.Figure()
+        for i, cn in enumerate(comp):
+            g = (by["imp_t"][cn] - bv).loc[since:]
+            fig.add_scatter(x=g.index, y=g.values, name=cn, mode="lines", line=dict(color=SERIES[(i + 1) % len(SERIES)], width=1.8),
+                            hovertemplate=f"{cn}: %{{y:,.0f}} t<extra></extra>")
+        fig.add_hline(y=0, line=dict(color="rgba(0,0,0,.25)", width=1))
+        show(base(fig, 280, xaxis=dict(tickformat="%Y"),
+                  yaxis=dict(tickformat=",.0f", title=dict(text=f"tonnes, {win}m", font=dict(size=10)))), "cs_ctry_vol")
 
     # ── Row 4: correlation of price levels | of price changes ──
     px = pd.DataFrame({c: price(c) for c in CORR_SET if c in by[col]}).loc[since:]

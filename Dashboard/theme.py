@@ -223,12 +223,25 @@ APP_CSS = """
   .gt td.b { font-weight:700; } .gt td.up { color:#1f9d6f; font-weight:700; } .gt td.dn { color:#c94a4a; font-weight:700; }
   .gt tr.tot td { border-top:1.5px solid rgba(43,74,138,.25); font-weight:700; background:#f5f8fc; }
   .tbl-scroll { overflow-x:auto; }
-  /* Summary: last sidebar pill and its page cards in a soft wine shade, set apart from the data pages */
-  [class*="st-key-nav_"] div[role="radiogroup"] label:last-child { margin-top:10px; position:relative; }
-  [class*="st-key-nav_"] div[role="radiogroup"] label:last-child::before { content:""; position:absolute; left:12px; right:12px; top:-7px; height:1px; background:rgba(123,30,58,.18); }
-  [class*="st-key-nav_"] div[role="radiogroup"] label:last-child div[data-testid="stMarkdownContainer"] p { color:#7b1e3a !important; font-weight:600; }
-  [class*="st-key-nav_"] div[role="radiogroup"] label:last-child:has(input:checked) { background:linear-gradient(180deg,#9a2a4c,#7b1e3a) !important; }
-  [class*="st-key-nav_"] div[role="radiogroup"] label:last-child:has(input:checked) div[data-testid="stMarkdownContainer"] p { color:#ffffff !important; }
+  /* Summary (wine) and, on cocoa, Study (amber, set apart at the very bottom) */
+  .st-key-nav_coffee div[role="radiogroup"] label:last-child,
+  .st-key-nav_cocoa div[role="radiogroup"] label:nth-last-child(2) { margin-top:10px; position:relative; }
+  .st-key-nav_coffee div[role="radiogroup"] label:last-child::before,
+  .st-key-nav_cocoa div[role="radiogroup"] label:nth-last-child(2)::before { content:""; position:absolute; left:12px; right:12px; top:-7px; height:1px; background:rgba(123,30,58,.18); }
+  .st-key-nav_coffee div[role="radiogroup"] label:last-child div[data-testid="stMarkdownContainer"] p,
+  .st-key-nav_cocoa div[role="radiogroup"] label:nth-last-child(2) div[data-testid="stMarkdownContainer"] p { color:#7b1e3a !important; font-weight:600; }
+  .st-key-nav_coffee div[role="radiogroup"] label:last-child:has(input:checked),
+  .st-key-nav_cocoa div[role="radiogroup"] label:nth-last-child(2):has(input:checked) { background:linear-gradient(180deg,#9a2a4c,#7b1e3a) !important; }
+  .st-key-nav_coffee div[role="radiogroup"] label:last-child:has(input:checked) div[data-testid="stMarkdownContainer"] p,
+  .st-key-nav_cocoa div[role="radiogroup"] label:nth-last-child(2):has(input:checked) div[data-testid="stMarkdownContainer"] p { color:#ffffff !important; }
+  .st-key-nav_cocoa div[role="radiogroup"] label:last-child { margin-top:22px; position:relative; border:1px solid rgba(217,112,26,.45) !important;
+    background:linear-gradient(135deg, rgba(240,146,58,.14), rgba(217,112,26,.06)) !important; animation:studyGlow 2.8s ease-in-out infinite; }
+  .st-key-nav_cocoa div[role="radiogroup"] label:last-child::before { content:"NEW · STUDY"; position:absolute; left:14px; top:-16px;
+    font-size:9px; font-weight:800; letter-spacing:.14em; color:#d9701a; }
+  .st-key-nav_cocoa div[role="radiogroup"] label:last-child div[data-testid="stMarkdownContainer"] p { color:#c2600f !important; font-weight:700; }
+  .st-key-nav_cocoa div[role="radiogroup"] label:last-child:has(input:checked) { background:linear-gradient(135deg,#f0923a,#d9701a) !important; animation:none; }
+  .st-key-nav_cocoa div[role="radiogroup"] label:last-child:has(input:checked) div[data-testid="stMarkdownContainer"] p { color:#ffffff !important; }
+  @keyframes studyGlow { 0%,100% { box-shadow:0 0 0 0 rgba(217,112,26,0); } 50% { box-shadow:0 0 12px 2px rgba(217,112,26,.28); } }
   .sum { border-collapse:collapse; font-family:Plus Jakarta Sans, sans-serif; font-size:13px; margin:6px 0 10px; min-width:640px; }
   .sum th { text-align:left; font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:#7b1e3a;
             padding:6px 22px 6px 0; border-bottom:1.5px solid rgba(123,30,58,.35); }
