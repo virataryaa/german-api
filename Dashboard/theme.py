@@ -224,11 +224,11 @@ APP_CSS = """
   .gt tr.tot td { border-top:1.5px solid rgba(43,74,138,.25); font-weight:700; background:#f5f8fc; }
   .tbl-scroll { overflow-x:auto; }
   /* Summary: last sidebar pill and its page cards in a soft wine shade, set apart from the data pages */
-  .st-key-nav div[role="radiogroup"] label:last-child { margin-top:10px; position:relative; }
-  .st-key-nav div[role="radiogroup"] label:last-child::before { content:""; position:absolute; left:12px; right:12px; top:-7px; height:1px; background:rgba(123,30,58,.18); }
-  .st-key-nav div[role="radiogroup"] label:last-child div[data-testid="stMarkdownContainer"] p { color:#7b1e3a !important; font-weight:600; }
-  .st-key-nav div[role="radiogroup"] label:last-child:has(input:checked) { background:linear-gradient(180deg,#9a2a4c,#7b1e3a) !important; }
-  .st-key-nav div[role="radiogroup"] label:last-child:has(input:checked) div[data-testid="stMarkdownContainer"] p { color:#ffffff !important; }
+  [class*="st-key-nav_"] div[role="radiogroup"] label:last-child { margin-top:10px; position:relative; }
+  [class*="st-key-nav_"] div[role="radiogroup"] label:last-child::before { content:""; position:absolute; left:12px; right:12px; top:-7px; height:1px; background:rgba(123,30,58,.18); }
+  [class*="st-key-nav_"] div[role="radiogroup"] label:last-child div[data-testid="stMarkdownContainer"] p { color:#7b1e3a !important; font-weight:600; }
+  [class*="st-key-nav_"] div[role="radiogroup"] label:last-child:has(input:checked) { background:linear-gradient(180deg,#9a2a4c,#7b1e3a) !important; }
+  [class*="st-key-nav_"] div[role="radiogroup"] label:last-child:has(input:checked) div[data-testid="stMarkdownContainer"] p { color:#ffffff !important; }
   .sum { border-collapse:collapse; font-family:Plus Jakarta Sans, sans-serif; font-size:13px; margin:6px 0 10px; min-width:640px; }
   .sum th { text-align:left; font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:#7b1e3a;
             padding:6px 22px 6px 0; border-bottom:1.5px solid rgba(123,30,58,.35); }

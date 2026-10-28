@@ -18,6 +18,8 @@ MONTHS = ["Oct", "Nov", "Dec", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", 
 
 # ICO green-bean-equivalent factors
 GBE = {"Green": 1.0, "Green decaf": 1.0, "Roasted": 1.19, "Roasted decaf": 1.19, "Soluble": 2.6}
+# ICCO bean-equivalent factors; chocolate at ~40% cocoa content is an estimate (its HS codes mix many recipes)
+CBE = {"Beans": 1.0, "Paste": 1.25, "Butter": 1.33, "Powder": 1.18, "Chocolate": 0.4}
 BAG_T = 0.06
 LB_PER_T = 2204.62
 
@@ -26,7 +28,8 @@ NAMES = {"Viet-Nam": "Vietnam", "Tanzania, United Republic of": "Tanzania", "Bel
          "Bolivia, Plurinational State of": "Bolivia", "Venezuela, Bolivarian Republic of": "Venezuela",
          "Korea, Republic of": "South Korea", "United States of America": "USA", "United Kingdom": "UK",
          "Netherlands": "Netherlands", "Côte d'Ivoire": "Ivory Coast", "Cote d'Ivoire": "Ivory Coast",
-         "Russian Federation": "Russia", "Switzerland (incl. Büsingen)": "Switzerland"}
+         "Russian Federation": "Russia", "Switzerland (incl. Büsingen)": "Switzerland",
+         "Dominican Republic": "Dominican Rep."}
 EUROPE = {"Belgium", "Netherlands", "Spain", "Italy", "France", "Austria", "Poland", "Switzerland", "UK", "Denmark",
           "Sweden", "Czechia", "Portugal", "Luxembourg", "Slovenia", "Slovakia", "Hungary", "Greece", "Ireland",
           "Finland", "Croatia", "Romania", "Bulgaria", "Lithuania", "Latvia", "Estonia", "Norway", "Malta", "Cyprus"}
@@ -52,20 +55,36 @@ def load_tax() -> pd.DataFrame:
     return d.set_index("date")
 
 
+# What differs between the two commodities; the trade pages read this instead of hard-coding coffee.
+COMMS = {
+    "coffee": dict(products="german_trade_products.csv", origins="german_trade_origins.csv", factor=GBE, main="Green",
+                   item="Green coffee", units=["Tonnes", "'000 bags", "Million bags"], unit_default="'000 bags"),
+    "cocoa": dict(products="german_cocoa_products.csv", origins="german_cocoa_origins.csv", factor=CBE, main="Beans",
+                  item="Cocoa beans", units=["Tonnes", "'000 t"], unit_default="'000 t"),
+}
+
+
 @st.cache_data(ttl=3600)
-def load_products() -> pd.DataFrame:
-    d = pd.read_csv(DB / "german_trade_products.csv", parse_dates=["date"])
-    d["gbe"] = d["product"].map(GBE)
+def load_products(comm="coffee") -> pd.DataFrame:
+    d = pd.read_csv(DB / COMMS[comm]["products"], parse_dates=["date"])
+    d = d.groupby(["date", "product"], as_index=False).sum(numeric_only=True)        # chocolate = many HS codes
+    d["gbe"] = d["product"].map(COMMS[comm]["factor"])
     d["cy"], d["cm"] = _cy(d["date"])
     return d
 
 
 @st.cache_data(ttl=3600)
-def load_origins() -> pd.DataFrame:
-    d = pd.read_csv(DB / "german_trade_origins.csv", parse_dates=["date"])
+def load_origins(comm="coffee") -> pd.DataFrame:
+    d = pd.read_csv(DB / COMMS[comm]["origins"], parse_dates=["date"])
     d["country"] = d["country"].map(clean_name)
     d["cy"], d["cm"] = _cy(d["date"])
     return d
+
+
+@st.cache_data(ttl=3600)
+def load_grind() -> pd.DataFrame:
+    """Germany's quarterly cocoa grind, tonnes; crop year Oct-Sep, Q1 = Oct-Dec."""
+    return pd.read_csv(DB / "german_cocoa_grind.csv")
 
 
 def latest_month(d: pd.DataFrame, col="imp_t"):
@@ -75,11 +94,13 @@ def latest_month(d: pd.DataFrame, col="imp_t"):
 
 
 # ── Units ─────────────────────────────────────────────────────────────────────
-UNITS = {"Tonnes": (1.0, ",.0f", "t"), "'000 bags": (1 / BAG_T / 1e3, ",.0f", "k bags"), "Million bags": (1 / BAG_T / 1e6, ",.2f", "M bags")}
+UNITS = {"Tonnes": (1.0, ",.0f", "t"), "'000 bags": (1 / BAG_T / 1e3, ",.0f", "k bags"), "Million bags": (1 / BAG_T / 1e6, ",.2f", "M bags"),
+         "'000 t": (1e-3, ",.1f", "k t")}
 
 
-def unit_picker(key, default="'000 bags"):
-    return st.radio("Unit", list(UNITS), index=list(UNITS).index(default), horizontal=True, key=key)
+def unit_picker(key, comm="coffee"):
+    opts = COMMS[comm]["units"]
+    return st.radio("Unit", opts, index=opts.index(COMMS[comm]["unit_default"]), horizontal=True, key=f"{key}_{comm}")
 
 
 def fmt_u(v, unit):

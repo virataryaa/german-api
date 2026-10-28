@@ -1,26 +1,26 @@
-"""Origins: German green coffee imports by country of origin (51000-0018), coffee year Oct-Sep."""
+"""Origins: German green coffee / cocoa bean imports by country of origin (51000-0018), crop year Oct-Sep."""
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from common import (H, AMBER, AXIS, EUROPE, GREEN, GREY, MONTHS, NAVY, OTHER_C, RED, SERIES, TEAL, UNITS, base,
+from common import (H, COMMS, AMBER, AXIS, EUROPE, GREEN, GREY, MONTHS, NAVY, OTHER_C, RED, SERIES, TEAL, UNITS, base,
                     card_head, cy_ytd, hero, load_origins, latest_month, pct, rgba, show, table, unit_picker,
                     yoy_cell)
 
 
-def sidebar():
+def sidebar(comm="coffee"):
     st.markdown("<div class='sb-lbl'>Origins</div>", unsafe_allow_html=True)
-    unit = unit_picker("or_unit")
+    unit = unit_picker("or_unit", comm)
     top_n = st.radio("Top origins", [5, 8, 10], index=1, horizontal=True, key="or_top")
-    decaf = st.radio("Green coffee", ["Incl. decaf", "Excl. decaf"], horizontal=True, key="or_decaf")
+    decaf = comm != "coffee" or st.radio("Green coffee", ["Incl. decaf", "Excl. decaf"], horizontal=True, key="or_decaf") == "Incl. decaf"
     eu = st.radio("European re-shipments", ["Show", "Hide"], horizontal=True, key="or_eu")
-    return unit, top_n, decaf == "Incl. decaf", eu == "Show"
+    return comm, unit, top_n, decaf, eu == "Show"
 
 
-def render(unit, top_n, decaf, eu):
-    d = load_origins()
-    d = d if decaf else d[d["product"] == "Green"]
+def render(comm, unit, top_n, decaf, eu):
+    d = load_origins(comm)
+    d = d if decaf else d[d["product"] == COMMS[comm]["main"]]
     if not eu:
         d = d[~d["country"].isin(EUROPE)]
     f, fmt, suf = UNITS[unit]
@@ -37,7 +37,7 @@ def render(unit, top_n, decaf, eu):
     tops = cur.sort_values(ascending=False).index[:top_n].tolist()
     colors = {c: SERIES[i % len(SERIES)] for i, c in enumerate(tops)}
 
-    hero("Green coffee imports by origin", f" · coffee year Oct–Sep · {unit}",
+    hero(f"{COMMS[comm]['item']} imports by origin", f" · crop year Oct–Sep · {unit}",
          [f"Latest {latest:%b %Y}"])
 
     tot_c, tot_p = cur.sum(), prev.sum()
@@ -81,7 +81,7 @@ def render(unit, top_n, decaf, eu):
     # ── Row 2: origin mix | 12m rolling ──
     l, r = st.columns(2, gap="small")
     with l, st.container(border=True):
-        card_head("Origin mix by coffee year")
+        card_head("Origin mix by crop year")
         cy_tot = d.groupby(["cy", "country"])["imp_t"].sum().unstack(fill_value=0)
         cy_tot = cy_tot.loc[cys[-12:]]
         mix = cy_tot.div(cy_tot.sum(axis=1), axis=0) * 100
@@ -140,7 +140,7 @@ def render(unit, top_n, decaf, eu):
 
     # ── Table ──
     with st.container(border=True):
-        card_head("Imports by origin and coffee year")
+        card_head("Imports by origin and crop year")
         full = [c for c in cys if c < cur_cy][-6:]
         yt = d.groupby(["cy", "country"])["imp_t"].sum().unstack(fill_value=0)
         rows_n = cur.sort_values(ascending=False).index[:15].tolist()

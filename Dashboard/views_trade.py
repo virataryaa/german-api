@@ -12,7 +12,7 @@ PRODUCTS = list(GBE)
 
 def sidebar():
     st.markdown("<div class='sb-lbl'>Trade balance</div>", unsafe_allow_html=True)
-    unit = unit_picker("tb_unit")
+    unit = unit_picker("tb_unit", "coffee")
     since = st.radio("History from", ["2010", "2016", "2020"], index=1, horizontal=True, key="tb_since")
     return unit, since
 
@@ -43,7 +43,7 @@ def render(unit, since):
 
     s = w12.sum()
 
-    # ── Row 1: waterfall | net imports vs consumption ──
+    # ── Row 1: waterfall | product flows ──
     l, r = st.columns([1, 1.35], gap="small")
     with l, st.container(border=True):
         card_head(f"Where the coffee went, 12m to {last:%b %Y}")
@@ -63,18 +63,6 @@ def render(unit, since):
                   yaxis=dict(tickformat=fmt, title=dict(text=suf, font=dict(size=10)))), "tb_wf")
 
     with r, st.container(border=True):
-        card_head("Net imports vs tax consumption, 12m rolling")
-        roll = m.rolling(12).sum().loc[since:] * f
-        fig = go.Figure()
-        fig.add_scatter(x=roll.index, y=roll["net"], name="Net imports", mode="lines", line=dict(color=NAVY, width=2.2),
-                        hovertemplate=f"Net imports: %{{y:{fmt}}}<extra></extra>")
-        fig.add_scatter(x=roll.index, y=roll["cons"], name="Tax consumption", mode="lines", line=dict(color=AMBER, width=2.2),
-                        hovertemplate=f"Consumption: %{{y:{fmt}}}<extra></extra>")
-        show(base(fig, H, xaxis=dict(tickformat="%Y"), yaxis=dict(tickformat=fmt)), "tb_roll")
-
-    # ── Row 2: product flows | gap by coffee year ──
-    l, r = st.columns([1.35, 1], gap="small")
-    with l, st.container(border=True):
         h, c = st.columns([1.2, 2], vertical_alignment="center")
         with h:
             card_head("Flows by product")
@@ -90,20 +78,10 @@ def render(unit, since):
                         hovertemplate=f"Net 12m avg: %{{y:{fmt}}}<extra></extra>")
         show(base(fig, H, barmode="relative", bargap=0.1, xaxis=dict(tickformat="%Y"), yaxis=dict(tickformat=fmt)), "tb_prod_c")
 
-    with r, st.container(border=True):
-        cm_now = (last.month - 10) % 12 + 1
-        cut = f"Oct–{MONTHS[cm_now - 1]}"
-        card_head("Implied stock change by coffee year")
-        y = m.copy()
-        y["cy"] = [f"{(d.year - (d.month < 10)) % 100:02d}/{(d.year - (d.month < 10) + 1) % 100:02d}" for d in y.index]
-        g = y.dropna(subset=["cons"]).groupby("cy")["gap"].sum() * f
-        g = g.iloc[-14:]
-        fig = go.Figure(go.Bar(x=g.index, y=g.values, marker_color=[TEAL if v >= 0 else RED for v in g.values],
-                               text=[format(v, fmt) for v in g.values], textposition="outside", textfont=dict(size=9.5, color=AXIS),
-                               cliponaxis=False, hovertemplate=f"%{{x}}: %{{y:{fmt}}} {suf}<extra></extra>"))
-        show(base(fig, H, legend=None, unified=False, bargap=0.35, yaxis=dict(tickformat=fmt)), "tb_gap_cy")
+    cm_now = (last.month - 10) % 12 + 1
+    cut = f"Oct–{MONTHS[cm_now - 1]}"
 
-    # ── Row 3: re-export destinations ──
+    # ── Row 2: re-export destinations ──
     o = load_origins()
     o = o[o["date"] <= last]
     cur_cy = f"{(last.year - (last.month < 10)) % 100:02d}/{(last.year - (last.month < 10) + 1) % 100:02d}"
